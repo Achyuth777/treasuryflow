@@ -1,0 +1,46 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createDemoSession, DEMO_STORAGE_KEY } from '../frontend/demo-session.ts';
+import { suppliers, today } from '../frontend/model.ts';
+const store = () => { const map = new Map(); return { getItem: k => map.get(k) || null, setItem: (k,v) => map.set(k,v), removeItem: k => map.delete(k) }; };
+test('refresh preserves interrupted settlement and recovery returns exactly one transaction', () => {
+  const storage = store();
+  const first = createDemoSession(storage);
+  const input = {id: crypto.randomUUID(), invoice:'PERSIST-001', recipient:suppliers[0].id, amount:'100', dueDate:today()};
+  first.state.create('creator', input);
+  first.state.act(input.id, 'manager1', 'approve');
+  assert.throws(() => first.state.act(input.id,'creator','execute',true), /interrupted/);
+  const hash = first.state.chain.get(input.id).txHash;
+  first.save();
+  const next = createDemoSession(storage);
+  assert.equal(next.state.payments.find(p => p.id === input.id).status, 'EXECUTING');
+  assert.equal(next.state.reconcile().recovered, 1);
+  assert.equal(next.state.act(input.id,'creator','execute').txHash, hash);
+  assert.equal(next.state.audit.filter(e => e.payment_id === input.id && e.action === 'EXECUTED').length, 1);
+});
+test('invalid saved data safely loads fresh seed and denied storage remains usable', () => {
+  const storage = store();
+  storage.setItem(DEMO_STORAGE_KEY, '{bad json');
+  const recovered = createDemoSession(storage);
+  assert.equal(recovered.recovered, true);
+  assert.ok(recovered.state.payments.length > 0);
+  assert.equal(recovered.save(), true);
+  const denied = createDemoSession({getItem:()=>null, setItem:()=>{throw new Error('quota');}, removeItem:()=>{}});
+  assert.equal(denied.save(), false);
+  assert.equal(denied.persistent, false);
+  assert.ok(denied.state.payments.length > 0);
+});
+test('saved spending resets across UTC dates, while records and events are retained', () => {
+  const storage = store();
+  const first = createDemoSession(storage); first.save();
+  const saved = JSON.parse(storage.getItem(DEMO_STORAGE_KEY));
+  saved.day = '2000-01-01'; storage.setItem(DEMO_STORAGE_KEY, JSON.stringify(saved));
+  const next = createDemoSession(storage);
+  assert.equal(next.state.spent, 0n);
+  assert.equal(next.state.payments.length, saved.payments.length);
+  assert.equal(next.state.chain.size, saved.chain.length);
+  next.state.create('creator', {id:crypto.randomUUID(), invoice:'RESET-ME', recipient:suppliers[0].id, amount:'12',dueDate:today()});
+  next.reset();
+  assert.equal(next.state.payments.some(p => p.invoice === 'RESET-ME'), false);
+  assert.equal(createDemoSession(storage).state.payments.some(p => p.invoice === 'RESET-ME'), false);
+});

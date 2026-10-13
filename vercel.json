@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:demo",
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/app",
+      "destination": "https://treasuryflow-payments.achyuthpvvirat.chatgpt.site/app",
+      "permanent": false
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: treasuryflow
+      POSTGRES_USER: treasuryflow
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-local-database-only}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U treasuryflow]
+      interval: 3s
+      retries: 20
+  chain:
+    build:
+      context: .
+      dockerfile: Dockerfile.chain
+    environment:
+      BRIDGE_SECRET: ${BRIDGE_SECRET:-local-bridge-secret-change-me}
+      CHAIN_DATA: /data
+    volumes: [chain_data:/data]
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          'node -e "fetch(''http://localhost:8546/config'',{headers:{''X-Bridge-Secret'':process.env.BRIDGE_SECRET}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 5s
+      start_period: 20s
+      retries: 20
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/treasuryflow
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-local-database-only}
+      BRIDGE_URL: http://chain:8546
+      BRIDGE_SECRET: ${BRIDGE_SECRET:-local-bridge-secret-change-me}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-treasury-demo-only}
+      DEMO_FAILPOINTS: ${DEMO_FAILPOINTS:-true}
+    depends_on:
+      postgres: { condition: service_healthy }
+      chain: { condition: service_healthy }
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports: ["127.0.0.1:8088:80"]
+    depends_on: [backend]
+volumes:
+  postgres_data:
+  chain_data:

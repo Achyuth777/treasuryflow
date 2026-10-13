@@ -1,0 +1,30 @@
+TREASURYFLOW — START HERE
+
+1. Extract the ZIP.
+2. Open TreasuryFlow-demo.html in Chrome or Edge for the interactive simulation.
+   Go to Demo lab and click Run the complete scenario.
+   No installation is needed. Refreshing resets the demonstration.
+3. For the actual Java + PostgreSQL + Solidity project:
+   Install Docker Desktop, open a terminal in this folder, then run:
+
+   docker compose up --build -d
+
+   Open http://localhost:8088/?mode=api
+   Account: creator
+   Password: treasury-demo-only
+
+   Switch to manager1 and manager2 to approve payments.
+   See README.md for all accounts, commands, and test instructions.
+
+INCLUDED
+React + TypeScript dashboard; Java Spring Boot API; PostgreSQL schema;
+Solidity treasury and mock token; local Ethereum chain; Docker Compose;
+automated tests; GitHub Actions CI; API docs; threat model; demo script.
+
+VERIFIED
+20 automated tests passed and a real Java process kill/restart recovered
+one settlement without a duplicate transfer. Java integration was tested
+with H2 compatibility storage; Docker/PostgreSQL was not available here.
+
+The HTML demo is a simulation, not a wallet or banking service.
+The local project uses mock tokens and publicly known test-chain keys.

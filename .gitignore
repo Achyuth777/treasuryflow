@@ -1,0 +1,14 @@
+node_modules/
+backend/target/
+dist/
+.env
+*.log
+.sites-runtime/
+chain-data/
+release/
+.wrangler/
+.vinext/
+hosted/public/app.js
+hosted/public/app.css
+
+*.tsbuildinfo
