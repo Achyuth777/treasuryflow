@@ -25,7 +25,11 @@ async function setup(api = false, home = false) {
   });
   const w = dom.window;
   w.scrollTo = () => {};
-  w.matchMedia = () => ({matches: true});
+  w.matchMedia = query => Object.assign(new w.EventTarget(), {
+    matches: true,
+    media: query,
+    onchange: null,
+  });
   w.HTMLElement.prototype.scrollIntoView = () => {};
   w.structuredClone = structuredClone;
   w.crypto.randomUUID = randomUUID;
