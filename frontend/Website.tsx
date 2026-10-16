@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon, Badge, Overlay } from './components/ui';
 import { actors, names, type Payment, type Audit, type suppliers } from './model';
 import { money, dateLabel } from './workspace';
@@ -39,6 +39,70 @@ const faqs = [
   ['Who can approve a payment?', 'The demo has two distinct approvers, Morgan and Jordan. Alex creates requests; Sam is the auditor. Requests above 5,000 mUSD require both approvers. The role switcher demonstrates permissions and is not authentication.'],
 ];
 
+const heroMessages = [
+  { lines: ['Business moves.', 'Your payments'], endings: ['should too.', 'keep pace.', 'move forward.'] },
+  { lines: ['The right payment.', 'The right people.'], endings: ['Every time.', 'Every step.', 'Every decision.'] },
+  { lines: ['Move funds.', 'Keep control.'], endings: ['Stay informed.', 'Stay connected.', 'Stay in control.'] },
+  { lines: ['Close the loop.', 'Know what moved.'], endings: ['With confidence.', 'With clarity.', 'With certainty.'] },
+];
+
+function HeroHeadline({ slide }: { slide: number }) {
+  const message = heroMessages[slide];
+  const [frame, setFrame] = useState({ phrase: 0, count: 0, deleting: false });
+  const [paused, setPaused] = useState(false);
+  const [reduced, setReduced] = useState(true);
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const motion = () => setReduced(media.matches);
+    const visibility = () => setVisible(!document.hidden);
+    motion(); visibility();
+    media.addEventListener('change', motion);
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      media.removeEventListener('change', motion);
+      document.removeEventListener('visibilitychange', visibility);
+    };
+  }, []);
+  const phrase = message.endings[frame.phrase];
+  useEffect(() => {
+    if (reduced || paused || !visible) return;
+    const complete = frame.count === phrase.length;
+    const delay = frame.deleting ? (frame.count === 0 ? 450 : 35) : complete ? 2400 : frame.count === 0 ? 450 : 75;
+    const timer = window.setTimeout(() => setFrame(previous => {
+      if (previous.deleting) return previous.count === 0
+        ? { phrase: (previous.phrase + 1) % message.endings.length, count: 0, deleting: false }
+        : { ...previous, count: previous.count - 1 };
+      return complete ? { ...previous, deleting: true } : { ...previous, count: previous.count + 1 };
+    }), delay);
+    return () => window.clearTimeout(timer);
+  }, [frame, phrase, message, reduced, paused, visible]);
+  return <>
+    <style>{`
+      .hero-typed { display: grid; position: relative; }
+      .hero-typed > span { grid-area: 1 / 1; min-width: 0; padding-right: .16em; }
+      .hero-typed-reserve { visibility: hidden; pointer-events: none; }
+      .hero-typed-copy { align-self: start; }
+      .hero-typed-cursor { display: inline-block; width: .025em; height: .76em; margin-left: .055em; vertical-align: -.025em; background: currentColor; box-shadow: 0 0 16px #ffb36b55; animation: hero-caret 1s step-end infinite; }
+      .hero-typing-control { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 6px 10px; border: 1px solid #ffffff30; border-radius: 20px; background: #07142255; color: #d2d7e0; font-size: 10px; letter-spacing: .5px; cursor: pointer; }
+      .hero-typing-control:hover { color: #ffb36b; border-color: #ffb36b88; }
+      .hero-typing-control:focus-visible { outline: 2px solid #ffb36b; outline-offset: 4px; }
+      .hero-typed[data-paused="true"] .hero-typed-cursor { animation: none; opacity: .55; }
+      @keyframes hero-caret { 50% { opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { .hero-typed-cursor, .hero-typing-control { display: none; } }
+    `}</style>
+    <h1 aria-label={[...message.lines, message.endings[0]].join(' ')}>
+      <span aria-hidden="true">{message.lines[0]}<br />{message.lines[1]}<br />
+        <em className="hero-typed" data-paused={paused || reduced}>
+          {message.endings.map(ending => <span key={ending} className="hero-typed-reserve">{ending}</span>)}
+          <span className="hero-typed-copy">{reduced ? message.endings[0] : phrase.slice(0, frame.count)}{!reduced && <i className="hero-typed-cursor" />}</span>
+        </em>
+      </span>
+    </h1>
+    {!reduced && <button className="hero-typing-control" onClick={() => setPaused(!paused)} aria-label={paused ? 'Resume headline animation' : 'Pause headline animation'}><span aria-hidden="true">{paused ? '▶' : 'Ⅱ'}</span>{paused ? 'Resume animation' : 'Pause animation'}</button>}
+  </>;
+}
+
 export function Website({ payments, audit, suppliers, onNavigate, onCreate, onOpenPayment }: Props) {
   const [slide, setSlide] = useState(0);
   const [menu, setMenu] = useState(false);
@@ -68,7 +132,7 @@ export function Website({ payments, audit, suppliers, onNavigate, onCreate, onOp
         <section id="home" className="site-hero" aria-label="TreasuryFlow introduction" style={{ backgroundImage: `linear-gradient(90deg, rgba(4,14,27,.66), rgba(4,14,27,.08)), linear-gradient(0deg, rgba(4,14,27,.94), transparent 65%), url(${harbor})` }}>
           <div className="hero-content" key={slide}>
             <p className="hero-eyebrow"><span /> CORPORATE PAYMENTS, CONNECTED.</p>
-            <h1>{current.headline}</h1>
+            <HeroHeadline key={slide} slide={slide} />
             <p className="hero-description">{current.detail}</p>
             <div className="hero-actions"><button className="site-button mint" onClick={onCreate}>Create a payment <Arrow /></button><button className="site-button ghost" onClick={() => setTracker(true)}>Track a payment <Icon name="search" size={16} /></button></div>
           </div>
