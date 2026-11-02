@@ -1,13 +1,10 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon, Badge, Overlay } from './components/ui';
-import { SmoothScroll } from './landing-motion';
 import { actors, names, type Payment, type Audit, type suppliers } from './model';
 import { money, dateLabel } from './workspace';
 import harbor from './assets/harbor-hero.png';
 import warehouse from './assets/warehouse.png';
 import team from './assets/team.png';
-const LandingStory = lazy(() => import('./landing-sections'));
-const LandingHonest = lazy(() => import('./landing-sections').then(m => ({ default: m.LandingHonest })));
 
 type Props = {
   payments: Payment[];
@@ -121,7 +118,6 @@ export function Website({ payments, audit, suppliers, onNavigate, onCreate, onOp
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
   };
   return <>
-    <SmoothScroll paused={menu || tracker || caseIndex !== null} />
     <div id="workspace" className="public-site"><a className="skip-link" href="#site-content">Skip to content</a>
       <header className="site-header">
         <a className="site-brand" href="#home" aria-label="TreasuryFlow home"><span className="site-mark"><Icon name="reconcile" size={25} /></span>TreasuryFlow<span className="wordmark-period">.</span></a>
@@ -146,7 +142,6 @@ export function Website({ payments, audit, suppliers, onNavigate, onCreate, onOp
             <div className="hero-disclosure"><span>Interactive demo · synthetic suppliers · mock currency</span><button onClick={() => section('introduction')}>Discover TreasuryFlow <span className="down-arrow"><Arrow /></span></button></div>
           </div>
         </section>
-        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#071422' }} />}><LandingStory /></Suspense>
         <section id="introduction" className="site-introduction site-section">
           <div className="section-kicker"><span className="section-number">01 /</span> A CLEARER WAY TO PAY</div>
           <div className="intro-grid"><figure className="intro-photo"><img src={team} alt="Colleagues reviewing documents together beside a laptop" loading="lazy" width="1672" height="941" /><figcaption>Better decisions start with a shared view.</figcaption></figure><div><h2>Less chasing.<br />More <span className="sage-text">clarity.</span></h2><p className="intro-description">A payment is more than a transfer. It’s an invoice, a decision, a deadline and a record. TreasuryFlow brings them together, so your team always knows what happens next.</p><button className="text-link" onClick={() => onNavigate('Payments')}>Meet your workspace <Arrow /></button></div></div>
@@ -165,7 +160,6 @@ export function Website({ payments, audit, suppliers, onNavigate, onCreate, onOp
         <section className="network-section site-section" id="network"><div className="network-copy"><div className="section-kicker"><span className="section-number">04 /</span> EVERY HANDOFF CONNECTED</div><h2>Your suppliers.<br />Your team.<br /><span className="sage-text">A shared view.</span></h2><p>Approved recipients and defined roles keep the workflow clear. Everyone works from the same payment record.</p><div className="network-toggle" aria-label="Explore the demo network">{['Suppliers', 'Team'].map(v => <button key={v} aria-pressed={network === v} onClick={() => setNetwork(v)}>{v}</button>)}</div><small>Synthetic demo network · no live bank connections.</small></div><div className="network-visual"><img className="network-photo" src={warehouse} alt="Sunlit warehouse with blue and orange shelving" loading="lazy" width="1774" height="887" /><div className="network-hub"><span className="site-mark"><Icon name="reconcile" size={28} /></span><b>TreasuryFlow</b><small>Shared payment workspace</small></div><div className={'network-nodes ' + (network === 'Team' ? 'team-nodes' : '')}>{network === 'Suppliers' ? suppliers.map(s => <div key={s.id} className="network-node"><span className="network-node-symbol">{s.name[0]}</span><div><b>{s.name}</b><small>{s.category}</small></div><span className="node-check"><Icon name="check" size={14} /></span></div>) : actors.map(a => <div key={a} className="network-node"><span className="network-node-symbol"><Icon name="user" size={19} /></span><div><b>{names[a].split(' · ')[0]}</b><small>{names[a].split(' · ')[1]}</small></div></div>)}</div><button className="text-link" onClick={() => onNavigate('Policy & recipients')}>View roles & recipient rules <Arrow /></button></div></section>
         <section id="stories" className="stories-section site-section"><div className="section-top"><div><div className="section-kicker"><span className="section-number">05 /</span> RELIABILITY IN PRACTICE</div><h2>Built for the<br />unexpected.</h2></div><p>Three demo scenarios.<br />Real checks in the application logic.</p></div><div className="stories-grid">{cases.map((c,i) => <button className="story-card" key={c.n} onClick={() => setCaseIndex(i)}><div className={'story-art art-' + i}><img src={[harbor,team,warehouse][i]} alt={["Container harbor at blue hour","Finance colleagues reviewing a payment record","Organized warehouse ready for supplier deliveries"][i]} loading="lazy" width="1672" height="941" /><Icon name={c.icon} size={32} /><span>{c.n}</span></div><div className="story-content"><small>{c.tag}</small><h3>{c.title}</h3><p>{c.description}</p><span className="story-link">Explore scenario <Arrow /></span></div></button>)}</div></section>
         <section className="tools-section site-section"><span className="section-kicker">ALREADY IN THE FLOW?</span><h2>Your next move,<br /><em>one click away.</em></h2><div><button className="site-button mint" onClick={() => setTracker(true)}>Track a payment <Icon name="search" size={17} /></button><button className="site-button ghost" onClick={() => onNavigate('Payments')}>Open workspace <Arrow /></button></div></section>
-        <Suspense fallback={null}><LandingHonest /></Suspense>
         <section className="faq-section site-section" id="questions"><div><div className="section-kicker">A FEW USEFUL ANSWERS</div><h2>Clear from<br />the outset.</h2></div><div className="faq-list">{faqs.map(([q,a]) => <details key={q}><summary>{q}<span>+</span></summary><p>{a}</p></details>)}</div></section>
         <section className="site-closing site-section"><a className="site-button dark" href="/app" style={{marginBottom:24}}>Start your company workspace <Arrow /></a><p>LESS FRICTION. MORE VISIBILITY.</p><h2>Let’s move your<br />business <em>forward.</em></h2><button className="site-button dark" onClick={() => onNavigate('Payments')}>Explore the demo workspace <Arrow /></button></section>
       </main>

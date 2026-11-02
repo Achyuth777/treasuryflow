@@ -1,30 +1,32 @@
 /* Landing design tokens: the single source for colour, type, space, radius, depth and motion. */
 .lp {
-  /* colour: the public site's navy base and warm orange accent (see website.css) */
-  --ink-950: #050e19;
-  --ink-900: #071422;
-  --ink-850: #0b1a28;
-  --ink-800: #112331;
-  --ink-700: #1a2f40;
-  --ink-600: #2b4155;
-  --gray-400: #a7b0c2;
-  --gray-300: #d2d7e0;
-  --text: #f5f6f9;
-  --mut: #a7b0c2;
-  --acc: #ffb16b;
-  --acc-strong: #ffc48c;
-  --acc-ink: #071422;
-  --acc-glow: rgba(255, 177, 107, 0.22);
+  /* colour: ink base, one emerald-teal accent, neutral greys, warm-white text */
+  --ink-950: #070b14;
+  --ink-900: #0a101d;
+  --ink-850: #0e1525;
+  --ink-800: #121a2d;
+  --ink-700: #1a2440;
+  --ink-600: #26314f;
+  --gray-400: #a3adbf;
+  --gray-300: #c3cad6;
+  --text: #f4f1ea;
+  --mut: #a3adbf;
+  --acc: #34d3b4;
+  --acc-strong: #5fe5cb;
+  --acc-ink: #03201a;
+  --acc-glow: rgba(52, 211, 180, 0.22);
   --amber: #f6c26b;
   --amber-bg: rgba(246, 194, 107, 0.12);
   --warn: #fb9a5b;
   --warn-bg: rgba(251, 154, 91, 0.13);
-  --ok-bg: rgba(255, 177, 107, 0.12);
+  --ok-bg: rgba(52, 211, 180, 0.12);
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.14);
 
   /* type */
-  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font:
+    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
   --fs-hero: clamp(2.75rem, 1.6rem + 5.2vw, 6rem);
   --fs-h2: clamp(2.1rem, 1.4rem + 3.2vw, 4rem);

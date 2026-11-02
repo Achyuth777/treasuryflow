@@ -1,8 +1,6 @@
-// Scroll-story sections embedded in the public website, loaded lazily from Website.tsx.
+// Below-the-fold landing sections, loaded lazily from landing.tsx.
 import React, { useEffect, useRef, useState } from "react";
 import {
-  LazyMotion,
-  domAnimation,
   m,
   useMotionValue,
   useMotionValueEvent,
@@ -12,16 +10,16 @@ import {
 import { activeStep, dolly, frame } from "./landing-math";
 import {
   Counter,
+  MagneticLink,
   Reveal,
   SampleTag,
   TiltCard,
   usePinProgress,
-  useStatic,
 } from "./landing-motion";
-import ExplodedSequence from "./landing-sequence";
-import "./landing-tokens.css";
-import "./landing.css";
 import { CANVAS, LedgerCard, PANELS, Pill, STOPS, TX } from "./landing-mock";
+
+const GITHUB = "https://github.com/Achyuth777/treasuryflow";
+const DEMO = "#workspace/Payments";
 
 const STEPS = [
   [
@@ -69,7 +67,7 @@ function useActiveStep(p: MotionValue<number>, n: number) {
   return step;
 }
 
-/* ---------- Journey dolly ---------- */
+/* ---------- 4 · Journey dolly ---------- */
 
 function Journey({ still }: { still: boolean }) {
   const ref = useRef<HTMLElement>(null);
@@ -81,7 +79,7 @@ function Journey({ still }: { still: boolean }) {
   const vh = useMotionValue(0);
   useEffect(() => {
     const el = view.current;
-    if (!el) return;
+    if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => {
       vw.set(el.clientWidth);
       vh.set(el.clientHeight);
@@ -205,7 +203,7 @@ function Journey({ still }: { still: boolean }) {
   );
 }
 
-/* ---------- Controls bento ---------- */
+/* ---------- 5 · Controls bento ---------- */
 
 function Controls() {
   return (
@@ -297,7 +295,7 @@ function Controls() {
   );
 }
 
-/* ---------- Failure-recovery zoom ---------- */
+/* ---------- 6 · Failure-recovery zoom ---------- */
 
 const RECOVERY = [
   ["Execute", "The creator executes an approved payment.", "APPROVED"],
@@ -378,7 +376,7 @@ function Recovery({ still }: { still: boolean }) {
   );
 }
 
-/* ---------- Roles ---------- */
+/* ---------- 7 · Roles ---------- */
 
 const ROLES = [
   [
@@ -442,7 +440,70 @@ function Roles() {
   );
 }
 
-/* ---------- Why blockchain, honestly ---------- */
+/* ---------- 8 · Live workspace ---------- */
+
+const icon = (d: string) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+    <path
+      d={d}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+const WORKSPACE = [
+  [
+    "Suppliers",
+    "Keep the people you pay in one list, scoped to your company workspace.",
+    "M16 19v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1M9.5 10a3 3 0 100-6 3 3 0 000 6zM21 19v-1a4 4 0 00-3-3.9M16 4.1a3 3 0 010 5.8",
+  ],
+  [
+    "Invoice PDFs",
+    "Attach the invoice to the payment it supports, so approvers see the source.",
+    "M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8zM14 3v5h5M9 13h6M9 17h4",
+  ],
+  [
+    "Statement matching",
+    "Match statement lines to settled payments and see what’s left open.",
+    "M4 7h11M4 12h7M4 17h11M17 14l2 2 4-4",
+  ],
+  [
+    "Reports",
+    "Review payments, approvals and settlement activity across the workspace.",
+    "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  ],
+];
+
+function Workspace() {
+  return (
+    <section className="band" aria-labelledby="w-h">
+      <div className="wrap">
+        <Head
+          eyebrow="Live workspace"
+          id="w-h"
+          title="A workspace around the ledger."
+          lead="Company workspaces with email-bound invites, so every approval comes from a separate, named person."
+        />
+        <div className="ws">
+          {WORKSPACE.map(([t, d, p], i) => (
+            <Reveal key={t} delay={i * 70}>
+              <TiltCard className="tile ws-tile" max={8}>
+                <span className="ws-icon z3">{icon(p)}</span>
+                <h3 className="z2">{t}</h3>
+                <p className="z1">{d}</p>
+              </TiltCard>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 9 · Why blockchain, honestly ---------- */
 
 function Honest() {
   return (
@@ -481,29 +542,103 @@ function Honest() {
   );
 }
 
-/** Scroll story placed after the website hero. */
-export default function LandingStory() {
-  const still = useStatic();
+/* ---------- 10 · FAQ ---------- */
+
+const FAQ = [
+  [
+    "Is this real money?",
+    "No. TreasuryFlow is an educational prototype. Funds are simulated mUSD on a local test chain. There is no KYC, bank connection or institutional integration.",
+  ],
+  [
+    "What stops a payment being paid twice?",
+    "Three layers: invoice dedupe in the ledger, a client UUID that makes retries idempotent, and a contract that rejects a second execution of the same payment.",
+  ],
+  [
+    "What happens if the API fails mid-settlement?",
+    "If the chain confirmed but the response was lost, the ledger stays EXECUTING until reconciliation finds the chain event and restores SETTLED with the original tx hash.",
+  ],
+  [
+    "How do I find a payment later?",
+    "Search by invoice number, payment ID or transaction hash. The audit trail exports as JSON.",
+  ],
+  ["Can the auditor change anything?", "No. The auditor role is read-only."],
+  [
+    "How do I try it?",
+    "Open the live demo for a seeded browser simulation, or run the full stack locally with Docker from the GitHub README.",
+  ],
+];
+
+function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
   return (
-    <LazyMotion features={domAnimation} strict>
-      <div className="lp" data-motion={still ? "static" : "full"}>
-        <ExplodedSequence />
-        <Journey still={still} />
-        <Controls />
-        <Recovery still={still} />
-        <Roles />
+    <section id="faq" className="wrap faq" aria-labelledby="q-h">
+      <Head eyebrow="FAQ" id="q-h" title="Questions, answered plainly." />
+      <div className="acc">
+        {FAQ.map(([q, a], i) => (
+          <div key={q} className={`acc-item ${open === i ? "open" : ""}`}>
+            <h3>
+              <button
+                aria-expanded={open === i}
+                aria-controls={`faq-${i}`}
+                id={`faq-b-${i}`}
+                onClick={() => setOpen(open === i ? null : i)}
+              >
+                {q}
+                <span className="acc-x" aria-hidden="true" />
+              </button>
+            </h3>
+            <div
+              id={`faq-${i}`}
+              role="region"
+              aria-labelledby={`faq-b-${i}`}
+              hidden={open !== i}
+            >
+              <p>{a}</p>
+            </div>
+          </div>
+        ))}
       </div>
-    </LazyMotion>
+    </section>
   );
 }
 
-/** The candid "do you need a blockchain" section, placed before the FAQ. */
-export function LandingHonest() {
+/* ---------- 11 · Final CTA ---------- */
+
+function Final() {
   return (
-    <LazyMotion features={domAnimation} strict>
-      <div className="lp">
-        <Honest />
+    <section className="final" aria-labelledby="fin-h">
+      <div className="wrap">
+        <Reveal>
+          <h2 id="fin-h">Try to pay an invoice twice.</h2>
+          <p className="lead">
+            Open the seeded simulation and try to break the rules. It won’t let
+            you.
+          </p>
+          <div className="ctas center">
+            <MagneticLink className="cta" href={DEMO}>
+              Open live demo
+            </MagneticLink>
+            <a className="cta ghost" href={GITHUB} rel="noopener">
+              View on GitHub
+            </a>
+          </div>
+        </Reveal>
       </div>
-    </LazyMotion>
+    </section>
+  );
+}
+
+export default function Sections({ still }: { still: boolean }) {
+  return (
+    <>
+      <Journey still={still} />
+      <Controls />
+      <Recovery still={still} />
+      <Roles />
+      <Workspace />
+      <Honest />
+      <Faq />
+      <Final />
+    </>
   );
 }
