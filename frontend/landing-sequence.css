@@ -1,0 +1,284 @@
+/* Exploded payment-core sequence. Tokens come from landing-tokens.css. */
+.lp .seq {
+  --seq-bg: #05090d;
+  position: relative;
+  height: 400vh;
+  background: var(--seq-bg);
+}
+.lp .seq-hold {
+  height: 400vh;
+}
+/* feather into the neighbouring sections */
+.lp .seq::before,
+.lp .seq::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 160px;
+  pointer-events: none;
+}
+.lp .seq::before {
+  top: 0;
+  background: linear-gradient(var(--ink-950), transparent);
+}
+.lp .seq::after {
+  bottom: 0;
+  background: linear-gradient(transparent, var(--ink-900));
+}
+.lp .seq-stage {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--seq-bg);
+}
+.lp .seq-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* ---------- story overlays ---------- */
+.lp .seq-ov {
+  position: absolute;
+  z-index: 2;
+  max-width: 32rem;
+  padding: var(--s3);
+  border-radius: var(--r-lg);
+  background: radial-gradient(
+    closest-side,
+    rgba(5, 9, 13, 0.7),
+    rgba(5, 9, 13, 0)
+  );
+}
+.lp .seq-ov h3 {
+  font-size: clamp(1.75rem, 1.1rem + 2.4vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  font-weight: 680;
+  color: rgba(255, 255, 255, 0.9);
+}
+.lp .seq-ov p {
+  margin-top: var(--s2);
+  font-size: var(--fs-lead);
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.6);
+}
+.lp .ov-top {
+  top: max(96px, 12vh);
+  left: 50%;
+  translate: -50% 0;
+  width: min(36rem, calc(100% - 32px));
+  text-align: center;
+}
+.lp .ov-bottom {
+  bottom: max(48px, 8vh);
+  left: 50%;
+  translate: -50% 0;
+  width: min(40rem, calc(100% - 32px));
+  max-width: none;
+  text-align: center;
+}
+.lp .ov-left {
+  top: 50%;
+  left: max(16px, 5vw);
+  translate: 0 -50%;
+}
+.lp .ov-right {
+  top: 50%;
+  right: max(16px, 5vw);
+  translate: 0 -50%;
+  text-align: right;
+}
+.lp .seq-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+.lp .seq-caption {
+  position: absolute;
+  z-index: 4;
+  top: 84px;
+  right: max(16px, 3vw);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: rgba(5, 9, 13, 0.6);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.75rem;
+}
+.lp .seq-caption span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+/* ---------- loading meter ---------- */
+.lp .seq-load {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 24px;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(260px, 70vw);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.lp .seq-load-track {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.lp .seq-load-bar {
+  display: block;
+  height: 100%;
+  background: var(--acc);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+/* ---------- CSS 3D fallback: five glass layers ---------- */
+.lp .gs {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  perspective: 1400px;
+}
+.lp .gs-scene {
+  position: relative;
+  width: min(44vw, 440px);
+  aspect-ratio: 1;
+  transform-style: preserve-3d;
+  transform: rotateX(58deg) rotateZ(-38deg);
+}
+.lp .gs-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--s3);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 177, 107, 0.08) 55%,
+    rgba(255, 255, 255, 0.03)
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 30px 60px -30px rgba(0, 0, 0, 0.8);
+}
+.lp .gs-layer span {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+/* ---------- reduced motion: stacked stills ---------- */
+.lp .seq-still {
+  position: relative;
+  padding-block: var(--s15) var(--s10);
+}
+.lp .seq-still .seq-caption {
+  position: static;
+  margin-bottom: var(--s5);
+}
+.lp .seq-shot {
+  margin: 0 0 var(--s10);
+  display: grid;
+  gap: var(--s4);
+}
+.lp .seq-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  background: var(--seq-bg, #05090d);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+.lp .seq-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.lp .seq-still figcaption {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s4);
+}
+.lp .seq-still-text h3 {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.25rem);
+}
+.lp .seq-still-text p {
+  margin-top: var(--s1);
+  color: rgba(255, 255, 255, 0.6);
+}
+.lp .seq-still .seq-ctas {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  margin-top: 0;
+}
+/* below desktop width the side captions move under the object */
+@media (max-width: 1023px) {
+  .lp .ov-left,
+  .lp .ov-right {
+    top: auto;
+    bottom: max(40px, 8vh);
+    left: 16px;
+    right: 16px;
+    translate: none;
+    max-width: none;
+  }
+}
+@media (max-width: 767px) {
+  .lp .seq,
+  .lp .seq-hold {
+    height: 300vh;
+  }
+  .lp .ov-top {
+    top: 120px;
+  }
+  .lp .seq-caption {
+    top: 80px;
+    right: auto;
+    left: 16px;
+  }
+  .lp .gs-scene {
+    width: min(64vw, 280px);
+  }
+  .lp .gs-layer {
+    padding: var(--s2);
+    border-radius: 22px;
+  }
+  .lp .gs-layer span {
+    font-size: 0.75rem;
+  }
+  .lp .seq-still figcaption {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp .seq-hold {
+    height: auto;
+  }
+}
