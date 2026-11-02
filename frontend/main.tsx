@@ -27,7 +27,8 @@ import { PaymentDrawer } from "./components/PaymentDrawer";
 import "./style.css";
 import "./theme.css";
 import "./website.css";
-import { Website, PaymentTracker, Arrow } from "./Website";
+import { PaymentTracker, Arrow } from "./Website";
+import { Landing } from "./landing";
 import { Business } from "./Business";
 import { createDemoSession } from "./demo-session";
 const apiMode = new URLSearchParams(location.search).get("mode") === "api";
@@ -390,12 +391,7 @@ function App() {
       </button>
     </section>
   );
-  if (home && connected) return <Website
-    payments={payments} audit={audit} suppliers={config.suppliers}
-    onNavigate={navigate}
-    onCreate={() => { navigate("Payments"); if (actor !== "creator") switchActor("creator"); openCreate(); }}
-    onOpenPayment={id => { navigate("Payments"); setSelected(id); setError(""); }}
-  />;
+  if (home && connected) return <Landing />;
   if (!connected)
     return (
       <main className="login-page">

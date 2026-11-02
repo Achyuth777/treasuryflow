@@ -319,39 +319,50 @@ test("secondary tools preserve overview and reliability features; activity and r
   } finally { dom.window.close(); }
 });
 
-test('new public website has working carousel, policy explorer and keyboard journey', async () => {
+test('public landing tells the payment story with honest prototype labels and an accessible FAQ', async () => {
   const { dom, doc, w } = await setup(false, true);
   try {
-    assert.ok(doc.querySelector('.site-hero'));
+    await sleep(60);
+    assert.ok(doc.querySelector('.lp'));
     assert.equal(doc.querySelector('.operations-header'), null);
-    assert.match(doc.querySelector('.site-hero h1').textContent, /Business moves/);
-    await click(doc.querySelector('[aria-label="Next capability"]'));
-    assert.match(doc.querySelector('.site-hero h1').textContent, /The right payment/);
-    await click(doc.querySelector('[aria-label="Previous capability"]'));
-    assert.match(doc.querySelector('.site-hero h1').textContent, /Business moves/);
-    await click(doc.querySelectorAll('.capability-row > button')[1]);
-    await set(w, doc.querySelector('[aria-label="Explore approval amount"]'), '5000');
-    assert.equal(doc.querySelector('.approval-result strong').textContent, '01');
-    await set(w, doc.querySelector('[aria-label="Explore approval amount"]'), '5001');
-    assert.equal(doc.querySelector('.approval-result strong').textContent, '02');
-    const first = doc.getElementById('journey-tab-0');
-    first.focus();
-    first.dispatchEvent(new w.KeyboardEvent('keydown', {key:'ArrowRight', bubbles:true}));
-    await sleep(40);
-    assert.equal(doc.activeElement.id, 'journey-tab-1');
-    assert.equal(doc.activeElement.getAttribute('aria-selected'), 'true');
-    assert.match(doc.querySelector('#journey-panel').textContent, /distinct approvers/);
-    await click(button(doc, 'Team'));
-    assert.equal(doc.querySelectorAll('.network-node').length, 4);
-    await click(button(doc, 'Suppliers'));
-    assert.equal(doc.querySelectorAll('.network-node').length, 2);
+    assert.equal(doc.querySelectorAll('h1').length, 1);
+    assert.match(doc.querySelector('h1').textContent, /can’t be paid twice/);
+    assert.match(doc.querySelector('.lp .proto').textContent, /Educational prototype · simulated funds/);
+    assert.match(doc.querySelector('.lp-foot').textContent, /Educational prototype · simulated funds/);
+    assert.ok(doc.querySelectorAll('.lp .sample').length >= 3, 'mockups are tagged as sample data');
+    assert.match(doc.body.textContent, /When a database is enough/);
+    const first = doc.getElementById('faq-b-0'), second = doc.getElementById('faq-b-1');
+    assert.equal(first.getAttribute('aria-expanded'), 'true');
+    await click(second);
+    assert.equal(second.getAttribute('aria-expanded'), 'true');
+    assert.equal(doc.getElementById('faq-1').hidden, false);
+    assert.equal(doc.getElementById('faq-0').hidden, true);
+    const burger = doc.querySelector('.lp .burger');
+    await click(burger);
+    assert.equal(burger.getAttribute('aria-expanded'), 'true');
+    await click(burger);
+    assert.equal(burger.getAttribute('aria-expanded'), 'false');
+  } finally { dom.window.close(); }
+});
+
+test('landing demo CTA opens the payment workspace', async () => {
+  const { dom, doc, w } = await setup(false, true);
+  try {
+    await sleep(60);
+    const cta = [...doc.querySelectorAll('.lp a')].find(a => a.textContent.trim() === 'Open live demo');
+    assert.equal(cta.getAttribute('href'), '#workspace/Payments');
+    cta.click();
+    await sleep(80);
+    assert.equal(w.location.hash, '#workspace/Payments');
+    assert.equal(doc.querySelector('.lp'), null);
+    assert.ok(doc.querySelector('.operations-header'));
   } finally { dom.window.close(); }
 });
 
 test('payment tracking searches real demo records, handles no result and opens the existing drawer', async () => {
-  const { dom, doc, w } = await setup(false, true);
+  const { dom, doc, w } = await setup();
   try {
-    await click(button(doc, 'Track a payment'));
+    await click(button(doc, 'Track payment'));
     assert.ok(doc.querySelector('.tracker-modal'));
     await set(w, doc.getElementById('tracking-query'), 'NO-SUCH-PAYMENT');
     doc.querySelector('.tracking-form').dispatchEvent(new w.Event('submit', {bubbles:true,cancelable:true}));
@@ -365,41 +376,16 @@ test('payment tracking searches real demo records, handles no result and opens t
     const invoice = doc.querySelector('.tracking-result-head small').textContent;
     assert.equal(doc.querySelectorAll('.tracking-progress .complete').length, 1);
     await click(button(doc, 'View payment details'));
-    assert.equal(doc.querySelector('.public-site'), null);
-    assert.ok(doc.querySelector('.operations-header'));
+    assert.equal(doc.querySelector('.tracker-modal'), null);
     assert.match(doc.querySelector('.drawer').textContent, new RegExp(invoice));
     assert.equal(w.location.hash, '#workspace/Payments');
-    assert.ok(doc.getElementById('workspace').hasAttribute('inert'));
   } finally { dom.window.close(); }
 });
 
-test('fullscreen menu closes with Escape and create CTA opens the original validated form', async () => {
-  const { dom, doc, w } = await setup(false, true);
+test('demo lab offers the failure-recovery demo; reset requires an explicit choice', async () => {
+  const { dom, doc } = await setup();
   try {
-    const menuButton = doc.querySelector('[aria-label="Open website menu"]');
-    menuButton.focus();
-    await click(menuButton);
-    assert.equal(doc.querySelectorAll('.menu-links button').length, 5);
-    assert.ok(doc.getElementById('workspace').hasAttribute('inert'));
-    doc.dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape',bubbles:true}));
-    await sleep(30);
-    assert.equal(doc.querySelector('.public-menu'), null);
-    assert.equal(doc.activeElement, menuButton);
-    await click(button(doc, 'Create a payment'));
-    assert.ok(doc.querySelector('.operations-header'));
-    assert.ok(doc.querySelector('.modal form'));
-    doc.querySelector('.modal form').dispatchEvent(new w.Event('submit', {bubbles:true,cancelable:true}));
-    await sleep(40);
-    assert.ok(doc.querySelectorAll('.field-error').length >= 3);
-  } finally { dom.window.close(); }
-});
-
-test('scenario stories lead to functioning demo tools; reset requires an explicit choice', async () => {
-  const { dom, doc } = await setup(false, true);
-  try {
-    await click(doc.querySelectorAll('.story-card')[2]);
-    assert.match(doc.querySelector('.site-modal').textContent, /response that never arrived/);
-    await click(button(doc, 'Open reliability demo'));
+    await click(button(doc, 'Demo lab'));
     assert.ok(button(doc, 'Run failure-recovery demo'));
     await click(button(doc, 'Reset demo data'));
     assert.match(doc.querySelector('[role="dialog"]').textContent, /fresh demo/);

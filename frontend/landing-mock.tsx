@@ -4,6 +4,7 @@ import { SampleTag } from "./landing-motion";
 
 export const TX = "0x9f3a…c41e";
 const SUP_A = "Northstar Cloud";
+const SUP_B = "Atlas Design Co.";
 
 const Check = () => (
   <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
@@ -26,6 +27,168 @@ export function Pill({
   children: React.ReactNode;
 }) {
   return <span className={`pill pill-${tone}`}>{children}</span>;
+}
+
+/** Browser/device chrome with bezel, sheen and the sample-data tag. */
+export function DeviceFrame({
+  children,
+  title,
+}: {
+  children: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <div className="device">
+      <div className="device-bar" aria-hidden="true">
+        <span className="lights">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="addr">{title}</span>
+        <span className="device-tags">
+          <span className="proto-chip">Simulated funds</span>
+          <SampleTag />
+        </span>
+      </div>
+      <div className="device-screen">{children}</div>
+      <span className="device-sheen" aria-hidden="true" />
+    </div>
+  );
+}
+
+/** The approval + settlement drawer: the hero's macro subject. */
+export function Drawer() {
+  return (
+    <div className="drawer" aria-hidden="true">
+      <div className="drawer-top">
+        <span>Approval</span>
+        <SampleTag />
+      </div>
+      <div className="drawer-head">
+        <div>
+          <small>INV-2041 · {SUP_A}</small>
+          <b>Payment request</b>
+        </div>
+        <Pill tone="wait">1 of 2 approvals</Pill>
+      </div>
+      <div className="drawer-amt">
+        7,500.00 <small>mUSD</small>
+      </div>
+      <div className="drawer-meta">
+        <div>
+          <span className="k">Policy</span>
+          <span className="v">2 distinct managers · above 5,000</span>
+        </div>
+        <div>
+          <span className="k">Due</span>
+          <span className="v">Today · UTC</span>
+        </div>
+        <div>
+          <span className="k">Client UUID</span>
+          <span className="v mono">3f9c…a71e</span>
+        </div>
+      </div>
+      <ol className="drawer-appr">
+        <li className="ok">
+          <span>
+            <Check />
+          </span>
+          Morgan · manager1<em>approved</em>
+        </li>
+        <li className="now">
+          <span>2</span>Jordan · manager2<em>awaiting</em>
+        </li>
+      </ol>
+      <div className="drawer-tx">
+        <small>Settlement</small>
+        <span className="mono">Not executed · needs approval</span>
+      </div>
+      <div className="drawer-actions">
+        <span className="btn-mock hot">Approve</span>
+        <span className="btn-mock">Reject</span>
+      </div>
+    </div>
+  );
+}
+
+const ROWS: [string, string, string, string, "ok" | "wait" | "mute"][] = [
+  ["INV-2041", SUP_A, "7,500.00", "Pending · 1/2", "wait"],
+  ["INV-2038", SUP_B, "1,240.00", "Settled", "ok"],
+  ["INV-2035", SUP_A, "3,980.00", "Approved", "mute"],
+  ["INV-2033", SUP_B, "2,760.00", "Settled", "ok"],
+];
+
+/** Full workspace dashboard used in the hero. */
+export function Dashboard() {
+  return (
+    <div className="dash" aria-hidden="true">
+      <aside className="dash-side">
+        <span className="dash-logo">
+          <b>T</b>TreasuryFlow
+        </span>
+        {[
+          "Payments",
+          "Approvals",
+          "Reconciliation",
+          "Suppliers",
+          "Audit trail",
+          "Reports",
+        ].map((n, i) => (
+          <span key={n} className={i === 0 ? "on" : ""}>
+            {n}
+          </span>
+        ))}
+      </aside>
+      <div className="dash-main">
+        <div className="dash-head">
+          <div>
+            <small>Workspace · Sample Co.</small>
+            <b>Payments</b>
+          </div>
+          <span className="btn-mock hot">+ New payment</span>
+        </div>
+        <div className="dash-kpis">
+          <div>
+            <small>Awaiting approval</small>
+            <b>2</b>
+          </div>
+          <div>
+            <small>Daily limit used (UTC)</small>
+            <b>
+              4,000 <em>/ 25,000</em>
+            </b>
+            <span className="meter">
+              <u style={{ transform: "scaleX(0.16)" }} />
+            </span>
+          </div>
+          <div>
+            <small>Settled today</small>
+            <b>2</b>
+          </div>
+        </div>
+        <div className="dash-table">
+          <div className="tr th">
+            <span>Invoice</span>
+            <span>Supplier</span>
+            <span>mUSD</span>
+            <span>Status</span>
+          </div>
+          {ROWS.map(([inv, sup, amt, st, tone], i) => (
+            <div key={inv} className={`tr ${i === 0 ? "sel" : ""}`}>
+              <span className="mono">{inv}</span>
+              <span>{sup}</span>
+              <span className="mono">{amt}</span>
+              <span>
+                <Pill tone={tone}>{st}</Pill>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <Drawer />
+    </div>
+  );
 }
 
 /* ---------- Journey canvas panels ---------- */
