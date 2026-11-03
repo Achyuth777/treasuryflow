@@ -92,7 +92,7 @@ test("dashboard shows honest demo metrics, searchable payments and range control
   const { dom, doc } = await setup();
   try {
     assert.match(doc.body.textContent, /Payments/);
-    assert.equal(doc.querySelectorAll('nav[aria-label="Main navigation"] button').length, 3);
+    assert.equal(doc.querySelectorAll('nav[aria-label="Main navigation"] button').length, 6);
     await click(button(doc, "Overview"));
     assert.match(doc.body.textContent, /Treasury overview/);
     assert.match(doc.body.textContent, /simulated settlement/);
@@ -118,12 +118,12 @@ test("table sorts and payment drawer opens with history and closes on Escape", a
   try {
     await click(
       [...doc.querySelectorAll("th button")].find((b) =>
-        b.textContent.includes("Amount"),
+        b.textContent.includes("mUSD"),
       ),
     );
     assert.equal(
       doc.querySelector('th[aria-sort="ascending"] button').textContent,
-      "Amount",
+      "mUSD",
     );
     await click(doc.querySelector(".row-link"));
     assert.ok(doc.querySelector('[role="dialog"]'));
@@ -295,20 +295,19 @@ test("payment priorities filter the queue and clear back to all requests", async
     assert.ok([...doc.querySelectorAll('tbody .badge')].every(el => el.classList.contains('pending')));
     await click(button(doc, 'Clear filters'));
     assert.ok(doc.querySelectorAll('tbody tr').length > expected);
-    await click([...doc.querySelectorAll('.summary-item')].find(b => b.textContent.includes('Needs attention')));
-    assert.match(doc.body.textContent, /No matching payments/);
-    await click(button(doc, 'Clear filters'));
-    assert.ok(doc.querySelectorAll('tbody tr').length > 0);
+    await click(button(doc, 'Approvals'));
+    assert.equal(button(doc, 'Approvals').getAttribute('aria-current'), 'page');
+    assert.equal(doc.querySelectorAll('tbody tr').length, expected);
   } finally { dom.window.close(); }
 });
 
 test("secondary tools preserve overview and reliability features; activity and reconciliation remain primary", async () => {
   const { dom, doc } = await setup();
   try {
-    assert.deepEqual([...doc.querySelectorAll('nav button')].map(b => b.textContent.replace(/\d+$/, '').trim()), ['Payments', 'Reconciliation', 'Activity']);
+    assert.deepEqual([...doc.querySelectorAll('nav[aria-label="Main navigation"] button')].map(b => b.textContent.trim()), ['Payments', 'Approvals', 'Reconciliation', 'Suppliers', 'Audit trail', 'Reports']);
     assert.equal(doc.querySelector('.workspace-tools').open, false);
     assert.equal(doc.querySelector('.operating-title h1').textContent, 'Payments');
-    await click(button(doc, 'Activity'));
+    await click(button(doc, 'Audit trail'));
     assert.match(doc.body.textContent, /Local demo activity/);
     await click(button(doc, 'Reconciliation'));
     await click(button(doc, 'Run reconciliation'));
@@ -494,5 +493,33 @@ test('reduced motion shows final values and no hidden entrance states', async ()
     const drawer = doc.querySelector('.drawer');
     assert.doesNotMatch(drawer.style.transform || '', /translateX\(56px\)/);
     for (const li of drawer.querySelectorAll('.timeline li')) assert.notEqual(li.style.opacity, '0');
+  } finally { dom.window.close(); }
+});
+
+test('payments screen shows KPIs from the data and an approval panel for the selected row', async () => {
+  const { dom, doc } = await setup();
+  try {
+    assert.equal(doc.querySelector('.payments-head .breadcrumb').textContent, 'Workspace · Northstar Holdings');
+    assert.equal(doc.querySelectorAll('h1').length, 1);
+    const kpis = [...doc.querySelectorAll('.payment-kpis .kpi')].map(k => k.textContent);
+    assert.equal(kpis.length, 3);
+    assert.match(kpis[0], /Awaiting approval\d+/);
+    assert.match(kpis[1], /Daily limit used \(UTC\)[\d,]+ \/ 25,000/);
+    assert.match(kpis[2], /Settled today\d+/);
+    assert.deepEqual([...doc.querySelectorAll('.payment-table th')].map(t => t.textContent.trim()), ['Invoice', 'Supplier', 'mUSD', 'Status']);
+    const panel = doc.querySelector('aside[aria-label="Approval"]');
+    assert.ok(panel.querySelector('.sample-chip'), 'simulation is labelled as sample data');
+    assert.equal(doc.querySelectorAll('tbody tr.selected').length, 1);
+    const pendingBadge = doc.querySelector('tbody .badge.pending');
+    assert.match(pendingBadge.textContent, /Pending · \d\/\d/);
+    // selecting another row moves the highlight and the panel
+    const row = [...doc.querySelectorAll('tbody tr')].find(r => !r.classList.contains('selected'));
+    const invoice = row.querySelector('.row-link').textContent;
+    await click(row.querySelector('.row-link'));
+    doc.dispatchEvent(new doc.defaultView.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await sleep(40);
+    assert.equal(doc.querySelector('tbody tr.selected .row-link').textContent, invoice);
+    assert.match(panel.textContent, new RegExp(invoice));
+    assert.match(panel.textContent, /Policy.*Due.*Client UUID.*Settlement/s);
   } finally { dom.window.close(); }
 });

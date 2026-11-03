@@ -12,6 +12,8 @@ export function PaymentTable({
   onCreate,
   canCreate,
   compact = false,
+  ledger = false,
+  selectedId,
 }: {
   payments: Payment[];
   supplierName: (id: string) => string;
@@ -21,6 +23,9 @@ export function PaymentTable({
   onCreate: () => void;
   canCreate: boolean;
   compact?: boolean;
+  /** Payments screen layout: Invoice · Supplier · mUSD · Status, selected row highlighted. */
+  ledger?: boolean;
+  selectedId?: string;
 }) {
   const reduced = useReducedMotion();
   const [query, setQuery] = useState(""),
@@ -149,14 +154,23 @@ export function PaymentTable({
         <table>
           <thead>
             <tr>
-              {[
-                ["supplier", "Supplier / invoice"],
-                ["amount", "Amount"],
-                ["dueDate", "Due date"],
-                ["status", "Status"],
-              ].map(([k, v]) => (
+              {(ledger
+                ? [
+                    ["invoice", "Invoice"],
+                    ["supplier", "Supplier"],
+                    ["amount", "mUSD"],
+                    ["status", "Status"],
+                  ]
+                : [
+                    ["supplier", "Supplier / invoice"],
+                    ["amount", "Amount"],
+                    ["dueDate", "Due date"],
+                    ["status", "Status"],
+                  ]
+              ).map(([k, v]) => (
                 <th
                   key={k}
+                  className={k === "amount" && ledger ? "num" : undefined}
                   aria-sort={
                     sort === k
                       ? descending
@@ -171,13 +185,51 @@ export function PaymentTable({
                   </button>
                 </th>
               ))}
-              <th>
-                <span className="sr-only">Open details</span>
-              </th>
+              {!ledger && (
+                <th>
+                  <span className="sr-only">Open details</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
-            {displayed.map((p, i) => (
+            {ledger && displayed.map((p, i) => (
+              <m.tr
+                key={p.id}
+                className={p.id === selectedId ? "selected" : undefined}
+                onClick={() => onOpen(p.id)}
+                layout="position"
+                initial={reduced ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.24,
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: Math.min(i, 10) * 0.025,
+                  layout: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
+                }}
+              >
+                <td className="mono">
+                  <button
+                    className="row-link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpen(p.id);
+                    }}
+                  >
+                    {p.invoice}
+                  </button>
+                </td>
+                <td>{supplierName(p.recipient)}</td>
+                <td className="num mono">{money(p.amount)}</td>
+                <td className="status-cell">
+                  <Badge
+                    status={p.status}
+                    detail={p.status === "PENDING" ? `${p.approvals.length}/${p.required}` : undefined}
+                  />
+                </td>
+              </m.tr>
+            ))}
+            {!ledger && displayed.map((p, i) => (
               <m.tr
                 key={p.id}
                 onClick={() => onOpen(p.id)}

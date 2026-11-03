@@ -158,11 +158,12 @@ export function Wordmark() {
     </span>
   );
 }
-export function Badge({ status }: { status: string }) {
+export function Badge({ status, detail }: { status: string; detail?: string }) {
   return (
     <span className={"badge " + status.toLowerCase()}>
       <i />
       {title(status)}
+      {detail && ` · ${detail}`}
     </span>
   );
 }
