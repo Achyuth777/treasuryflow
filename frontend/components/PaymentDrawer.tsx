@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { m, useReducedMotion } from "motion/react";
 import { Badge, Icon, Overlay } from "./ui";
 import { money, title, short } from "../workspace";
 import {
@@ -45,6 +46,14 @@ export function PaymentDrawer({
       actor !== "auditor" &&
       ["APPROVED", "EXECUTING", "SETTLED"].includes(p.status) &&
       p.dueDate <= today();
+  const reduced = useReducedMotion();
+  // One success pulse when reconciliation (or execution) moves EXECUTING to SETTLED.
+  const lastStatus = useRef(p.status);
+  const [pulse, setPulse] = useState(0);
+  useEffect(() => {
+    if (lastStatus.current === "EXECUTING" && p.status === "SETTLED") setPulse((n) => n + 1);
+    lastStatus.current = p.status;
+  }, [p.status]);
   const events = audit
     .filter((a) => a.payment_id === p.id)
     .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id - b.id);
@@ -72,7 +81,19 @@ export function PaymentDrawer({
           <h2>{supplier}</h2>
           <p>{p.invoice}</p>
         </div>
-        <Badge status={p.status} />
+        <span className="status-pulse">
+          <Badge status={p.status} />
+          {pulse > 0 && !reduced && (
+            <m.span
+              key={pulse}
+              className="status-pulse-ring"
+              aria-hidden="true"
+              initial={{ opacity: 0.7, scale: 1 }}
+              animate={{ opacity: 0, scale: 1.6 }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            />
+          )}
+        </span>
       </div>
       <div className="drawer-amount">
         {money(p.amount)}
@@ -215,8 +236,15 @@ export function PaymentDrawer({
       <section className="drawer-section">
         <h3>Audit timeline</h3>
         <ol className="timeline">
-          {events.map((e) => (
-            <li key={e.id}>
+          {events.map((e, i) => (
+            <m.li
+              key={e.id}
+              // each event reveals once as it scrolls into the drawer
+              initial={reduced ? false : { opacity: 0, y: 8 }}
+              whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1], delay: Math.min(i, 6) * 0.04 }}
+            >
               <span className={"timeline-dot " + e.action.toLowerCase()}>
                 <Icon
                   name={
@@ -242,7 +270,7 @@ export function PaymentDrawer({
                   })}
                 </small>
               </div>
-            </li>
+            </m.li>
           ))}
         </ol>
       </section>

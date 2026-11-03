@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
+import { animate, m, useReducedMotion } from "motion/react";
 import { title } from "../workspace";
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
@@ -112,6 +113,51 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
     </svg>
   );
 }
+/**
+ * Animates a total from its previous value to the new one. The final value is
+ * rendered immediately (and kept under reduced motion); the tween writes text
+ * directly, so it never re-renders React per frame.
+ */
+export function CountUp({
+  value,
+  format,
+}: {
+  value: number;
+  format: (n: number) => string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const previous = useRef(0);
+  const reduced = useReducedMotion();
+  // layout effect: the start value is written before paint, so the total never flashes
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const from = previous.current;
+    previous.current = value;
+    if (!el || reduced || from === value) return;
+    el.textContent = format(from);
+    const controls = animate(from, value, {
+      duration: 0.7,
+      ease: [0.16, 1, 0.3, 1],
+      // in-between frames show whole units or cents; the final frame is exact
+      onUpdate: (v) =>
+        (el.textContent = format(
+          Number.isInteger(value) ? Math.round(v) : Math.round(v * 100) / 100,
+        )),
+      onComplete: () => (el.textContent = format(value)),
+    });
+    return () => controls.stop();
+  }, [value, reduced]);
+  return <span ref={ref}>{format(value)}</span>;
+}
+
+/** The TreasuryFlow mark used by the landing page, workspace and /app. */
+export function Wordmark() {
+  return (
+    <span className="tf-wordmark">
+      <b aria-hidden="true">T</b>TreasuryFlow
+    </span>
+  );
+}
 export function Badge({ status }: { status: string }) {
   return (
     <span className={"badge " + status.toLowerCase()}>
@@ -174,6 +220,7 @@ export function Overlay({
   drawer?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   useEffect(() => {
@@ -232,13 +279,17 @@ export function Overlay({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
+      <m.div
         ref={ref}
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={heading}
         className={(drawer ? "drawer" : "modal") + (wide ? " wide-modal" : "")}
+        // drawers spring in from the edge; closing is immediate so actions never wait
+        initial={drawer && !reduced ? { x: 56, opacity: 0 } : false}
+        animate={drawer ? { x: 0, opacity: 1 } : undefined}
+        transition={{ type: "spring", stiffness: 420, damping: 38, mass: 0.8 }}
       >
         <div className="overlay-head">
           <span className="overline">{heading}</span>
@@ -251,7 +302,7 @@ export function Overlay({
           </button>
         </div>
         {children}
-      </div>
+      </m.div>
     </div>
   );
 }

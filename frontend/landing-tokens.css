@@ -1,4 +1,6 @@
-/* Landing design tokens: the single source for colour, type, space, radius, depth and motion. */
+/* TreasuryFlow design tokens: the single source for colour, type, space, radius, depth and
+   motion across the landing page, the demo workspace and the hosted /app. */
+:root,
 .lp {
   /* colour: ink base, one emerald-teal accent, neutral greys, warm-white text */
   --ink-950: #070b14;
@@ -20,6 +22,15 @@
   --warn: #fb9a5b;
   --warn-bg: rgba(251, 154, 91, 0.13);
   --ok-bg: rgba(52, 211, 180, 0.12);
+  --acc-bg: rgba(52, 211, 180, 0.12);
+  --gray-500: #8d98ae;
+  /* semantic statuses; always paired with a text label, never colour alone */
+  --good: #6ee0a6;
+  --good-bg: rgba(110, 224, 166, 0.13);
+  --info: #9ab9ff;
+  --info-bg: rgba(154, 185, 255, 0.13);
+  --danger: #ff9a9a;
+  --danger-bg: rgba(255, 154, 154, 0.13);
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.14);
 

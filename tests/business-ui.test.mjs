@@ -24,3 +24,12 @@ test('manager can approve in UI and auditor has no write controls',async()=>{
  const m=await open(h,'manager');try{await click(button(m.doc,'Invoices'));await click(button(m.doc,'INV-UI'));await click(button(m.doc,'Approve invoice'));assert.equal(h.sqlite.prepare('SELECT status FROM invoices').get().status,'APPROVED');assert.match(m.doc.querySelector('.modal').textContent,/manager@example.com/);}finally{m.dom.window.close();}
  const a=await open(h,'auditor');try{await click(button(a.doc,'Invoices'));await click(button(a.doc,'INV-UI'));assert.equal(button(a.doc,'Record a bank payment'),undefined);assert.equal(button(a.doc,'+ Submit invoice'),undefined);assert.equal(a.doc.querySelector('input[type=file]'),null);}finally{a.dom.window.close();h.close();}
 });
+test('an unreachable workspace service shows a plain message, not a parser error',async()=>{
+ const dom=new JSDOM('<div id="root"></div>',{url:'https://treasury.test/app',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
+ w.matchMedia=()=>({matches:false});
+ w.fetch=async()=>({ok:false,status:502,json:async()=>{throw new SyntaxError('Unexpected end of JSON input');}});
+ try{w.eval(bundle);await sleep();await sleep();await sleep();
+  assert.match(w.document.body.textContent,/workspace service is not responding/);
+  assert.doesNotMatch(w.document.body.textContent,/Unexpected end of JSON|Failed to execute/);
+ }finally{dom.window.close();}
+});

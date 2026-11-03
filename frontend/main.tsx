@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { LazyMotion, MotionConfig, domMax } from "motion/react";
 import {
   actors,
   names,
@@ -18,6 +19,8 @@ import {
   Empty,
   Skeleton,
   Overlay,
+  Wordmark,
+  CountUp,
   exportJson,
 } from "./components/ui";
 import { ActivityChart } from "./components/ActivityChart";
@@ -27,6 +30,7 @@ import { PaymentDrawer } from "./components/PaymentDrawer";
 import "./style.css";
 import "./theme.css";
 import "./website.css";
+import "./app-theme.css";
 import { PaymentTracker, Arrow } from "./Website";
 import { Landing } from "./landing";
 import { Business } from "./Business";
@@ -105,22 +109,33 @@ function App() {
   }, []);
   const api = useCallback(
     async (path: string, body?: unknown) => {
-      const res = await fetch("/api" + path, {
-        method: body === undefined ? "GET" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Basic " + btoa(actor + ":" + password),
-        },
-        signal: AbortSignal.timeout(15000),
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      });
+      const unreachable =
+        "The local TreasuryFlow API is not responding. Start the Docker project (docker compose up) and retry.";
+      let res: Response;
+      try {
+        res = await fetch("/api" + path, {
+          method: body === undefined ? "GET" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic " + btoa(actor + ":" + password),
+          },
+          signal: AbortSignal.timeout(15000),
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        });
+      } catch (e) {
+        if ((e as Error).name === "TimeoutError")
+          throw Error("The local TreasuryFlow API took too long to respond. Retry in a moment.");
+        throw Error(unreachable);
+      }
       const data = await res
         .json()
         .catch(() => ({
           error:
             res.status === 401
               ? "Your account or password is incorrect."
-              : "The server did not return a valid response.",
+              : res.status >= 500
+                ? unreachable
+                : "The server did not return a valid response.",
         }));
       if (!res.ok) throw Error(data.error || `Request failed (${res.status}).`);
       return data;
@@ -246,9 +261,33 @@ function App() {
       setReport(null);
     }
   };
+  // The app keeps its own scroll positions: the workspace always opens at the top and
+  // returning to the landing page restores where the visitor left it.
+  const homeRef = useRef(home),
+    landingScroll = useRef(0);
+  homeRef.current = home;
+  useLayoutEffect(() => {
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    if (!home) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
+    const y = landingScroll.current;
+    let frames = 0,
+      raf = 0;
+    // Landing sections load lazily; wait until the page is tall enough to restore.
+    const restore = () => {
+      if (document.documentElement.scrollHeight - innerHeight >= y || frames++ > 90)
+        window.scrollTo({ top: y, behavior: "instant" });
+      else raf = requestAnimationFrame(restore);
+    };
+    restore();
+    return () => cancelAnimationFrame(raf);
+  }, [home]);
   useEffect(() => {
     const route = () => {
       const isWorkspace = location.hash.startsWith("#workspace");
+      if (homeRef.current && isWorkspace) landingScroll.current = window.scrollY;
       setHome(!apiMode && !isWorkspace);
       if (isWorkspace) {
         const next = decodeURIComponent(location.hash.split("/")[1] || "Payments");
@@ -396,7 +435,7 @@ function App() {
     return (
       <main className="login-page">
         <div className="login-brand">
-          <span className="brand-mark">T</span>TreasuryFlow
+          <Wordmark />
         </div>
         <section className="login-card">
           <span className="overline">LOCAL TREASURY WORKSPACE</span>
@@ -461,7 +500,7 @@ function App() {
         </a>
         <div className="app-body">
           <header className="operations-header">
-            <button className="operations-brand" onClick={() => { if (apiMode) { navigate("Payments"); return; } setHome(true); history.pushState(null, "", "#home"); window.scrollTo({ top: 0, behavior: "instant" }); }} aria-label={apiMode ? "TreasuryFlow payments" : "TreasuryFlow home"}><span className="site-mark"><Icon name="reconcile" size={23} /></span>TreasuryFlow<span className="wordmark-period">.</span></button>
+            <button className="operations-brand" onClick={() => { if (apiMode) { navigate("Payments"); return; } landingScroll.current = 0; setHome(true); history.pushState(null, "", "#home"); }} aria-label={apiMode ? "TreasuryFlow payments" : "TreasuryFlow home"}><Wordmark /></button>
             <nav aria-label="Main navigation" className="operations-nav">
               {nav.map(([name, icon]) => <button key={name} onClick={() => navigate(name)} aria-current={page === name ? "page" : undefined} className={page === name ? "active" : ""}><Icon name={icon} size={17} />{name}{name === "Payments" && <small>{pending.length}</small>}</button>)}
             </nav>
@@ -573,7 +612,7 @@ function App() {
                   : "Refresh data"}
               </button>
             </div>
-            {page === "Payments" && <div className="treasury-position"><div><Icon name="wallet" size={21} /><span>{apiMode ? "Available treasury" : "Simulated treasury"}<strong>{config.balance !== undefined ? money(config.balance) : "—"}<small>mUSD</small></strong></span></div><div className="position-spend"><span>Daily limit <b>{money(limit)} mUSD</b></span><div className="position-meter"><i style={{ width: `${Math.min(100, spent / limit * 100)}%` }} /></div><small>{money(spent)} used · resets at 00:00 UTC</small></div><button className="text-link" onClick={() => navigate("Policy & recipients")}>View policies <Arrow /></button></div>}
+            {page === "Payments" && <div className="treasury-position"><div><Icon name="wallet" size={21} /><span>{apiMode ? "Available treasury" : "Simulated treasury"}<strong>{config.balance !== undefined ? money(config.balance) : "—"}<small>mUSD</small></strong></span></div><div className="position-spend"><span>Daily limit <b>{money(limit)} mUSD</b></span><div className="position-meter"><i style={{ width: `${Math.min(100, spent / limit * 100)}%` }} /></div><small><CountUp value={spent} format={money} /> used · resets at 00:00 UTC</small></div><button className="text-link" onClick={() => navigate("Policy & recipients")}>View policies <Arrow /></button></div>}
             {demoSession?.recovered && <p className="storage-notice" role="status">The saved demo data could not be read. A fresh sample workspace has been loaded.</p>}
             {networkError && (
               <div className="network-error" role="alert">
@@ -608,9 +647,11 @@ function App() {
                             <Icon name="wallet" size={19} />
                           </div>
                           <strong>
-                            {config.balance !== undefined
-                              ? money(config.balance)
-                              : "—"}
+                            {config.balance !== undefined ? (
+                              <CountUp value={Number(config.balance)} format={money} />
+                            ) : (
+                              "—"
+                            )}
                             <small>mUSD</small>
                           </strong>
                           <div className="metric-bottom">
@@ -635,7 +676,10 @@ function App() {
                             <Icon name="clock" size={19} />
                           </div>
                           <strong>
-                            {String(pending.length).padStart(2, "0")}
+                            <CountUp
+                              value={pending.length}
+                              format={(n) => String(Math.round(n)).padStart(2, "0")}
+                            />
                             <small>payments</small>
                           </strong>
                           <div className="metric-bottom">
@@ -663,9 +707,10 @@ function App() {
                             <Icon name="check" size={19} />
                           </div>
                           <strong>
-                            {money(
-                              ready.reduce((s, p) => s + Number(p.amount), 0),
-                            )}
+                            <CountUp
+                              value={ready.reduce((s, p) => s + Number(p.amount), 0)}
+                              format={money}
+                            />
                             <small>mUSD</small>
                           </strong>
                           <div className="metric-bottom">
@@ -1217,7 +1262,8 @@ function App() {
       {toast && (
         <div
           className={"toast " + (toast.error ? "toast-error" : "")}
-          role={toast.error ? "alert" : "status"}
+          // An open form or drawer already announces the same error inline.
+          role={toast.error ? (toast.message === error && (form || chosen) ? undefined : "alert") : "status"}
         >
           <Icon name={toast.error ? "alert" : "check"} size={18} />
           <span>{toast.message}</span>
@@ -1297,4 +1343,12 @@ function App() {
     </>
   );
 }
-createRoot(document.getElementById("root")!).render(location.pathname.replace(/\/$/, "") === "/app" ? <Business /> : <App />);
+// One Motion context for every screen: layout features for table reordering, and
+// reduced-motion preferences honoured everywhere.
+createRoot(document.getElementById("root")!).render(
+  <LazyMotion features={domMax} strict>
+    <MotionConfig reducedMotion="user">
+      {location.pathname.replace(/\/$/, "") === "/app" ? <Business /> : <App />}
+    </MotionConfig>
+  </LazyMotion>,
+);

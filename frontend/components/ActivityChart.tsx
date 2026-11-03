@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { m, useReducedMotion } from "motion/react";
 import { settlementSeries, money, dateLabel } from "../workspace";
 import type { Payment, Audit } from "../model";
 export function ActivityChart({
@@ -8,6 +9,7 @@ export function ActivityChart({
   payments: Payment[];
   audit: Audit[];
 }) {
+  const reduced = useReducedMotion();
   const [days, setDays] = useState(7),
     [hover, setHover] = useState<number | null>(null);
   const series = useMemo(
@@ -68,9 +70,21 @@ export function ActivityChart({
               onClick={() => setHover(i)}
               aria-label={`${dateLabel(s.date)}: ${money(s.value)} mUSD settled`}
             >
-              <span
+              <m.span
+                // keyed by range so switching 7/14/30 days redraws from the baseline
+                key={days}
                 className="bar-fill"
-                style={{ height: `${Math.max(2, (s.value / max) * 100)}%` }}
+                style={{
+                  height: `${Math.max(2, (s.value / max) * 100)}%`,
+                  originY: 1,
+                }}
+                initial={reduced ? false : { scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{
+                  duration: 0.45,
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: Math.min(i, 30) * 0.012,
+                }}
               />
               <span className="bar-label">
                 {days <= 7 || i === 0 || i === days - 1 || i % 7 === 0

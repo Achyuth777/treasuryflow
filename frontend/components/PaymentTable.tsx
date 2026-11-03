@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { m, useReducedMotion } from "motion/react";
 import type { Payment } from "../model";
 import { money, dateLabel } from "../workspace";
 import { Icon, Badge, Empty, exportJson } from "./ui";
@@ -21,6 +22,7 @@ export function PaymentTable({
   canCreate: boolean;
   compact?: boolean;
 }) {
+  const reduced = useReducedMotion();
   const [query, setQuery] = useState(""),
     [sort, setSort] = useState("dueDate"),
     [descending, setDescending] = useState(true),
@@ -175,8 +177,21 @@ export function PaymentTable({
             </tr>
           </thead>
           <tbody>
-            {displayed.map((p) => (
-              <tr key={p.id} onClick={() => onOpen(p.id)}>
+            {displayed.map((p, i) => (
+              <m.tr
+                key={p.id}
+                onClick={() => onOpen(p.id)}
+                // rows rise in once, then glide to new positions on sort/filter
+                layout="position"
+                initial={reduced ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.24,
+                  ease: [0.16, 1, 0.3, 1],
+                  delay: Math.min(i, 10) * 0.025,
+                  layout: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
+                }}
+              >
                 <td>
                   <div className="supplier-cell">
                     <span
@@ -217,7 +232,7 @@ export function PaymentTable({
                 <td>
                   <Icon name="chevron" size={16} />
                 </td>
-              </tr>
+              </m.tr>
             ))}
           </tbody>
         </table>
