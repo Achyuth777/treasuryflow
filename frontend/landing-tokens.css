@@ -33,6 +33,9 @@
   --danger-bg: rgba(255, 154, 154, 0.13);
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.14);
+  --veil: rgba(255, 255, 255, 0.03);
+  --dash-line: rgba(255, 255, 255, 0.32);
+  --amber-line: rgba(246, 194, 107, 0.4);
 
   /* type */
   --font:

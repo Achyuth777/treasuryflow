@@ -27,6 +27,7 @@ import { ActivityChart } from "./components/ActivityChart";
 import { PaymentTable } from "./components/PaymentTable";
 import { PaymentForm } from "./components/PaymentForm";
 import { PaymentDrawer } from "./components/PaymentDrawer";
+import { ApprovalPanel } from "./components/ApprovalPanel";
 import "./style.css";
 import "./theme.css";
 import "./website.css";
@@ -56,10 +57,14 @@ const freshDraft = (): Input => ({
   amount: "",
   dueDate: today(),
 });
-const nav = [
-  ["Payments", "payments"],
-  ["Reconciliation", "reconcile"],
-  ["Activity", "clock"],
+// Sidebar destinations: label, icon, existing screen, optional queue filter.
+const nav: [string, string, string, string?][] = [
+  ["Payments", "payments", "Payments"],
+  ["Approvals", "shield", "Payments", "PENDING"],
+  ["Reconciliation", "reconcile", "Reconciliation"],
+  ["Suppliers", "user", "Policy & recipients"],
+  ["Audit trail", "clock", "Activity"],
+  ["Reports", "grid", "Overview"],
 ];
 function App() {
   const [home, setHome] = useState(!apiMode && !location.hash.startsWith("#workspace")),
@@ -88,6 +93,7 @@ function App() {
     [notices, setNotices] = useState<Notice[]>([]),
     [toast, setToast] = useState<Notice | null>(null),
     [selected, setSelected] = useState<string | null>(null),
+    [focused, setFocused] = useState<string | null>(null),
     [filter, setFilter] = useState("ALL"),
     [form, setForm] = useState(false),
     [draft, setDraft] = useState<Input>(freshDraft),
@@ -357,6 +363,15 @@ function App() {
     ready = payments.filter((p) => p.status === "APPROVED"),
     settled = payments.filter((p) => p.status === "SETTLED"),
     chosen = payments.find((p) => p.id === selected);
+  // Settled today: settled payments whose settlement event is dated today (UTC).
+  const settledToday = new Set(
+    audit
+      .filter((a) => ["EXECUTED", "RECOVERED"].includes(a.action) && a.created_at.slice(0, 10) === today())
+      .map((a) => a.payment_id)
+      .filter((id) => settled.some((p) => p.id === id)),
+  ).size;
+  const panelPayment =
+    payments.find((p) => p.id === focused) ?? pending[0] ?? payments[0];
   const spent = Number(config.dailySpent || 0),
     limit = Number(config.dailyLimit);
   const recent = [...audit].sort(
@@ -498,12 +513,17 @@ function App() {
         <a className="skip-link" href="#main-content">
           Skip to workspace
         </a>
+        <aside className="workspace-sidebar">
+          <button className="operations-brand" onClick={() => { if (apiMode) { navigate("Payments"); return; } landingScroll.current = 0; setHome(true); history.pushState(null, "", "#home"); }} aria-label={apiMode ? "TreasuryFlow payments" : "TreasuryFlow home"}><Wordmark /></button>
+          <nav aria-label="Main navigation" className="sidebar-nav">
+            {nav.map(([label, icon, target, only]) => {
+              const active = page === target && (target !== "Payments" || (only ? filter === only : filter !== "PENDING"));
+              return <button key={label} onClick={() => { navigate(target); if (target === "Payments") setFilter(only ?? "ALL"); }} aria-current={active ? "page" : undefined} className={active ? "active" : ""} title={label}><Icon name={icon} size={18} /><span className="nav-label">{label}</span></button>;
+            })}
+          </nav>
+        </aside>
         <div className="app-body">
           <header className="operations-header">
-            <button className="operations-brand" onClick={() => { if (apiMode) { navigate("Payments"); return; } landingScroll.current = 0; setHome(true); history.pushState(null, "", "#home"); }} aria-label={apiMode ? "TreasuryFlow payments" : "TreasuryFlow home"}><Wordmark /></button>
-            <nav aria-label="Main navigation" className="operations-nav">
-              {nav.map(([name, icon]) => <button key={name} onClick={() => navigate(name)} aria-current={page === name ? "page" : undefined} className={page === name ? "active" : ""}><Icon name={icon} size={17} />{name}{name === "Payments" && <small>{pending.length}</small>}</button>)}
-            </nav>
             <div className="operations-account"><span className="person-avatar">{names[actor][0]}</span><label><span>{apiMode ? "Local account" : "Demo role"}</span><select aria-label="Acting account" value={actor} onChange={e => switchActor(e.target.value as Actor)} disabled={!!busy}>{actors.map(a => <option key={a} value={a}>{names[a]}</option>)}</select></label>{apiMode && <button className="icon-btn" aria-label="Disconnect local account" onClick={() => switchActor(actor)}><Icon name="logout" size={17} /></button>}</div>
           </header>
           <div className="operations-context"><span><i />Northstar Holdings <b>/</b> Finance workspace</span><div>
@@ -512,6 +532,7 @@ function App() {
             <details className="workspace-tools"><summary><Icon name="grid" size={15} />Workspace tools<Icon name="chevron" size={12} /></summary><div className="workspace-tools-menu">{[["Overview", "grid"], ["Policy & recipients", "shield"], ["Demo lab", "lab"]].map(([name, icon]) => <button key={name} onClick={e => { navigate(name); e.currentTarget.closest('details')?.removeAttribute('open'); }} aria-current={page === name ? "page" : undefined}><Icon name={icon} size={17} />{name}</button>)}</div></details>
           </div></div>
           <main id="main-content" tabIndex={-1}>
+            {page !== "Payments" && (
             <div className="page-heading operating-title">
               <div>
                 <div className="eyebrow">
@@ -584,6 +605,7 @@ function App() {
                 ) : null}
               </div>
             </div>
+            )}
             <div className="workspace-status">
               <span>
                 {apiMode ? (
@@ -612,7 +634,6 @@ function App() {
                   : "Refresh data"}
               </button>
             </div>
-            {page === "Payments" && <div className="treasury-position"><div><Icon name="wallet" size={21} /><span>{apiMode ? "Available treasury" : "Simulated treasury"}<strong>{config.balance !== undefined ? money(config.balance) : "—"}<small>mUSD</small></strong></span></div><div className="position-spend"><span>Daily limit <b>{money(limit)} mUSD</b></span><div className="position-meter"><i style={{ width: `${Math.min(100, spent / limit * 100)}%` }} /></div><small><CountUp value={spent} format={money} /> used · resets at 00:00 UTC</small></div><button className="text-link" onClick={() => navigate("Policy & recipients")}>View policies <Arrow /></button></div>}
             {demoSession?.recovered && <p className="storage-notice" role="status">The saved demo data could not be read. A fresh sample workspace has been loaded.</p>}
             {networkError && (
               <div className="network-error" role="alert">
@@ -755,16 +776,72 @@ function App() {
                       </div>
                     </>
                   )}
-                  {page === "Payments" && <section className="payment-summary" aria-label="Payment priorities">
-                    {[
-                      { label: "Awaiting approval", count: pending.length, filter: "PENDING", icon: "clock", note: "Ready for a review" },
-                      { label: "Ready to pay", count: ready.length, filter: "APPROVED", icon: "check", note: "Approvals complete" },
-                      { label: "Needs attention", count: payments.filter(p => ["EXECUTING", "FAILED"].includes(p.status)).length, filter: "ATTENTION", icon: "alert", note: "Check settlement status" },
-                    ].map(item => <button key={item.filter} className={filter === item.filter ? "summary-item selected" : "summary-item"} aria-pressed={filter === item.filter} onClick={() => setFilter(filter === item.filter ? "ALL" : item.filter)}>
-                      <span className="summary-icon"><Icon name={item.icon} size={19} /></span><span><span className="summary-label">{item.label}</span><strong>{String(item.count).padStart(2, "0")}</strong><small>{item.note}</small></span><Icon name="chevron" size={16} />
-                    </button>)}
-                  </section>}
-                  {["Overview", "Payments"].includes(page) && (
+                  {page === "Payments" && (
+                    <div className="payments-screen">
+                      <div className="payments-main">
+                        <div className="page-heading operating-title payments-head">
+                          <div>
+                            <p className="breadcrumb">Workspace · Northstar Holdings</p>
+                            <h1>Payments</h1>
+                          </div>
+                          <button
+                            className="button primary"
+                            onClick={openCreate}
+                            disabled={actor !== "creator" || !!busy}
+                            title={actor !== "creator" ? "Switch to the payment creator to create a request." : undefined}
+                          >
+                            <Icon name="plus" size={18} />
+                            New payment
+                          </button>
+                        </div>
+                        <section className="payment-kpis" aria-label="Payment summary">
+                          <button
+                            className={"kpi summary-item" + (filter === "PENDING" ? " selected" : "")}
+                            aria-pressed={filter === "PENDING"}
+                            onClick={() => setFilter(filter === "PENDING" ? "ALL" : "PENDING")}
+                          >
+                            <span className="summary-label">Awaiting approval</span>
+                            <strong>{pending.length}</strong>
+                          </button>
+                          <div className="kpi">
+                            <span className="summary-label">Daily limit used (UTC)</span>
+                            <strong>
+                              {money(spent).replace(/\.00$/, "")} <small>/ {money(limit).replace(/\.00$/, "")}</small>
+                            </strong>
+                            <span className="kpi-meter" aria-hidden="true">
+                              <i style={{ transform: `scaleX(${limit ? Math.min(1, spent / limit) : 0})` }} />
+                            </span>
+                          </div>
+                          <div className="kpi">
+                            <span className="summary-label">Settled today</span>
+                            <strong>{settledToday}</strong>
+                          </div>
+                        </section>
+                        <PaymentTable
+                          payments={payments}
+                          supplierName={supplierName}
+                          filter={filter}
+                          setFilter={setFilter}
+                          onOpen={(id) => {
+                            setFocused(id);
+                            setSelected(id);
+                            setError("");
+                          }}
+                          onCreate={openCreate}
+                          canCreate={actor === "creator"}
+                          ledger
+                          selectedId={panelPayment?.id}
+                        />
+                      </div>
+                      <ApprovalPanel
+                        payment={panelPayment}
+                        supplier={panelPayment ? supplierName(panelPayment.recipient) : ""}
+                        threshold={Number(config.threshold || 5000)}
+                        sample={!apiMode}
+                      />
+                    </div>
+                  )}
+                  {page === "Overview" && (
                     <PaymentTable
                       payments={payments}
                       supplierName={supplierName}
@@ -776,7 +853,7 @@ function App() {
                       }}
                       onCreate={openCreate}
                       canCreate={actor === "creator"}
-                      compact={page === "Overview"}
+                      compact
                     />
                   )}
                 </div>
