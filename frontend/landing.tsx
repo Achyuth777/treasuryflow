@@ -13,6 +13,8 @@ import { Dashboard, DeviceFrame } from "./landing-mock";
 
 export const GITHUB = "https://github.com/Achyuth777/treasuryflow";
 export const DEMO = "#workspace/Payments";
+/** Hosted pilot workspace: records payments made elsewhere, moves no money. */
+export const LIVE = "/app";
 const Sections = lazy(() => import("./landing-sections"));
 const ExplodedSequence = lazy(() => import("./landing-sequence"));
 
@@ -44,6 +46,9 @@ function Nav() {
               {l}
             </a>
           ))}
+          <a href={LIVE} aria-label="Sign in to live workspace">
+            Sign in
+          </a>
           <a className="cta sm" href={DEMO}>
             Open live demo
           </a>
@@ -175,6 +180,7 @@ function Footer() {
             Docs
           </a>
           <a href={DEMO}>Live demo</a>
+          <a href={LIVE}>Sign in to live workspace</a>
         </nav>
       </div>
     </footer>

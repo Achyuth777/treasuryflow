@@ -397,3 +397,102 @@ test('demo lab offers the failure-recovery demo; reset requires an explicit choi
     assert.match(doc.body.textContent, /original sample payments are ready/);
   } finally { dom.window.close(); }
 });
+
+test('a failed action is announced once while its form shows the error', async () => {
+  const { dom, doc, w } = await setup(true);
+  try {
+    await set(w, doc.querySelector('input[type="password"]'), 'demo');
+    doc.querySelector('form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+    await sleep(100);
+    await click(button(doc, 'New payment'));
+    await set(w, doc.querySelector('.modal select'), doc.querySelectorAll('.modal select option')[1].value);
+    await set(w, doc.querySelector('input[placeholder="e.g. INV-2026-085"]'), 'ANNOUNCE-ONCE');
+    await set(w, doc.querySelector('input[placeholder="0.00"]'), '120');
+    const submit = () => doc.querySelector('.modal form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+    submit(); await sleep(40); submit(); await sleep(80);
+    const announcing = [...doc.querySelectorAll('[role="alert"],[role="status"]')].filter(e => /Test network failure/.test(e.textContent));
+    assert.equal(announcing.length, 1, 'only the inline error is a live region');
+    assert.ok(doc.querySelector('.modal [role="alert"]'));
+    assert.match(doc.querySelector('.toast').textContent, /Test network failure/, 'the toast is still shown');
+  } finally { dom.window.close(); }
+});
+
+test('inline form errors describe their fields', async () => {
+  const { dom, doc, w } = await setup();
+  try {
+    await click(button(doc, 'New payment'));
+    doc.querySelector('.modal form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+    await sleep(40);
+    const invoice = doc.querySelector('input[placeholder="e.g. INV-2026-085"]');
+    assert.equal(invoice.getAttribute('aria-invalid'), 'true');
+    assert.equal(doc.getElementById(invoice.getAttribute('aria-labelledby')).textContent, 'Invoice reference');
+    const note = doc.getElementById(invoice.getAttribute('aria-describedby'));
+    assert.ok(note && note.classList.contains('field-error') && note.textContent.trim(), 'error text is linked to the field');
+    const supplier = doc.querySelector('.modal select');
+    assert.ok(doc.getElementById(supplier.getAttribute('aria-describedby')).textContent.trim());
+  } finally { dom.window.close(); }
+});
+
+test('API mode explains an unreachable local API and shows no demo data', async () => {
+  const { dom, doc, w } = await setup(true);
+  try {
+    w.fetch = async () => { throw new TypeError('Failed to fetch'); };
+    await set(w, doc.querySelector('input[type="password"]'), 'demo');
+    doc.querySelector('form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+    await sleep(100);
+    assert.match(doc.body.textContent, /local TreasuryFlow API is not responding/);
+    assert.equal(doc.querySelectorAll('tbody tr').length, 0);
+    assert.equal(doc.querySelector('.operations-header'), null);
+  } finally { dom.window.close(); }
+});
+
+test('the workspace opens at the top and going back restores the landing position', async () => {
+  const { dom, doc, w } = await setup(false, true);
+  try {
+    await sleep(60);
+    const calls = [];
+    let y = 4321;
+    Object.defineProperty(w, 'scrollY', { configurable: true, get: () => y });
+    Object.defineProperty(doc.documentElement, 'scrollHeight', { configurable: true, value: 99999 });
+    w.scrollTo = (o) => { calls.push(typeof o === 'object' ? o.top : o); };
+    [...doc.querySelectorAll('.lp a')].find(a => a.textContent.trim() === 'Open live demo').click();
+    await sleep(80);
+    assert.ok(doc.querySelector('.operations-header'));
+    assert.ok(calls.includes(0), 'workspace starts at the top');
+    y = 0;
+    w.location.hash = '#home';
+    await sleep(120);
+    assert.ok(doc.querySelector('.lp'));
+    assert.equal(calls.at(-1), 4321, 'landing scroll position restored');
+  } finally { dom.window.close(); }
+});
+
+test('landing links to the live workspace under a clear label', async () => {
+  const { dom, doc } = await setup(false, true);
+  try {
+    await sleep(60);
+    const links = [...doc.querySelectorAll('.lp a[href="/app"]')];
+    assert.ok(links.some(a => a.textContent.trim() === 'Sign in to live workspace'));
+    assert.ok(links.every(a => /Sign in to live workspace/.test(a.getAttribute('aria-label') || a.textContent)));
+    assert.match(doc.body.textContent, /records payments made elsewhere and moves no money/);
+  } finally { dom.window.close(); }
+});
+
+test('reduced motion shows final values and no hidden entrance states', async () => {
+  // setup()'s matchMedia reports every query as matching, including prefers-reduced-motion
+  const { dom, doc, w } = await setup();
+  try {
+    w.location.hash = '#workspace/Overview';
+    await sleep(80);
+    const totals = [...doc.querySelectorAll('.metric strong span')].map(e => e.textContent);
+    assert.ok(totals.length >= 3 && totals.every(t => /\d/.test(t)), 'totals render their final values');
+    for (const bar of doc.querySelectorAll('.bar-fill')) assert.doesNotMatch(bar.style.transform, /scaleY\(0\)/);
+    w.location.hash = '#workspace/Payments';
+    await sleep(80);
+    for (const row of doc.querySelectorAll('tbody tr')) assert.notEqual(row.style.opacity, '0');
+    await click(doc.querySelector('tbody tr button'));
+    const drawer = doc.querySelector('.drawer');
+    assert.doesNotMatch(drawer.style.transform || '', /translateX\(56px\)/);
+    for (const li of drawer.querySelectorAll('.timeline li')) assert.notEqual(li.style.opacity, '0');
+  } finally { dom.window.close(); }
+});

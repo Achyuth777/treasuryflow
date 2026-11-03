@@ -20,6 +20,7 @@ import { CANVAS, LedgerCard, PANELS, Pill, STOPS, TX } from "./landing-mock";
 
 const GITHUB = "https://github.com/Achyuth777/treasuryflow";
 const DEMO = "#workspace/Payments";
+const LIVE = "/app";
 
 const STEPS = [
   [
@@ -618,10 +619,17 @@ function Final() {
             <MagneticLink className="cta" href={DEMO}>
               Open live demo
             </MagneticLink>
+            <a className="cta ghost" href={LIVE}>
+              Sign in to live workspace
+            </a>
             <a className="cta ghost" href={GITHUB} rel="noopener">
               View on GitHub
             </a>
           </div>
+          <p className="final-note">
+            The demo is a labelled simulation. The live workspace is a pilot
+            that records payments made elsewhere and moves no money.
+          </p>
         </Reveal>
       </div>
     </section>

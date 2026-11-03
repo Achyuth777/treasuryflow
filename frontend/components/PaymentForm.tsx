@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { Overlay, Icon } from "./ui";
 import { money, validateInput } from "../workspace";
 import type { Input, Payment } from "../model";
@@ -21,6 +21,8 @@ export function PaymentForm({
   onClose: () => void;
   onSubmit: () => Promise<void>;
 }) {
+  const uid = useId();
+  const ids = (k: string) => ({ label: `${uid}-${k}-label`, note: `${uid}-${k}-note` });
   const [step, setStep] = useState(1),
     [touched, setTouched] = useState<Record<string, boolean>>({});
   const errors = validateInput(draft, payments, suppliers);
@@ -70,8 +72,10 @@ export function PaymentForm({
         {step === 1 ? (
           <>
             <label className="field">
-              Supplier
+              <span id={ids("recipient").label}>Supplier</span>
               <select
+                aria-labelledby={ids("recipient").label}
+                aria-describedby={ids("recipient").note}
                 value={draft.recipient}
                 disabled={busy}
                 onChange={(e) => field("recipient", e.target.value)}
@@ -86,14 +90,16 @@ export function PaymentForm({
                 ))}
               </select>
               {touched.recipient && errors.recipient ? (
-                <small className="field-error">{errors.recipient}</small>
+                <small className="field-error" id={ids("recipient").note}>{errors.recipient}</small>
               ) : (
-                <small>Only eligible recipients can receive a payment.</small>
+                <small id={ids("recipient").note}>Only eligible recipients can receive a payment.</small>
               )}
             </label>
             <label className="field">
-              Invoice reference
+              <span id={ids("invoice").label}>Invoice reference</span>
               <input
+                aria-labelledby={ids("invoice").label}
+                aria-describedby={touched.invoice && errors.invoice ? ids("invoice").note : undefined}
                 autoComplete="off"
                 value={draft.invoice}
                 placeholder="e.g. INV-2026-085"
@@ -104,13 +110,15 @@ export function PaymentForm({
                 maxLength={100}
               />
               {touched.invoice && errors.invoice && (
-                <small className="field-error">{errors.invoice}</small>
+                <small className="field-error" id={ids("invoice").note}>{errors.invoice}</small>
               )}
             </label>
             <div className="form-row">
               <label className="field">
-                Amount · mUSD
+                <span id={ids("amount").label}>Amount · mUSD</span>
                 <input
+                  aria-labelledby={ids("amount").label}
+                  aria-describedby={touched.amount && errors.amount ? ids("amount").note : undefined}
                   inputMode="decimal"
                   placeholder="0.00"
                   value={draft.amount}
@@ -120,12 +128,14 @@ export function PaymentForm({
                   aria-invalid={!!(touched.amount && errors.amount)}
                 />
                 {touched.amount && errors.amount && (
-                  <small className="field-error">{errors.amount}</small>
+                  <small className="field-error" id={ids("amount").note}>{errors.amount}</small>
                 )}
               </label>
               <label className="field">
-                Due date · UTC
+                <span id={ids("dueDate").label}>Due date · UTC</span>
                 <input
+                  aria-labelledby={ids("dueDate").label}
+                  aria-describedby={touched.dueDate && errors.dueDate ? ids("dueDate").note : undefined}
                   type="date"
                   min="2000-01-01"
                   max="2100-12-31"
@@ -136,7 +146,7 @@ export function PaymentForm({
                   aria-invalid={!!(touched.dueDate && errors.dueDate)}
                 />
                 {touched.dueDate && errors.dueDate && (
-                  <small className="field-error">{errors.dueDate}</small>
+                  <small className="field-error" id={ids("dueDate").note}>{errors.dueDate}</small>
                 )}
               </label>
             </div>

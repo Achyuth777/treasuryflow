@@ -1,0 +1,281 @@
+/* Workspace and /app surface language, matched to the landing page.
+   Colours come from landing-tokens.css; this layer adds the shared depth, glass,
+   button, focus and motion treatment the colour tokens alone cannot express. */
+
+/* status aliases the workspace stylesheets use for text */
+:root {
+  --green: var(--good);
+  --red: var(--danger);
+}
+html {
+  background: var(--ink-900);
+  color-scheme: dark;
+}
+body {
+  background: var(--ink-900);
+  -webkit-font-smoothing: antialiased;
+}
+::selection {
+  background: var(--acc-glow);
+}
+
+/* ---------- shared wordmark (same mark as the landing nav) ---------- */
+.tf-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tf-wordmark b {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: linear-gradient(160deg, var(--acc-strong), #12a58a);
+  color: var(--acc-ink);
+  font-size: 15px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+}
+a.tf-wordmark {
+  text-decoration: none;
+}
+
+/* ---------- glass header ---------- */
+.operations-header,
+.business-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- depth: 1px gradient edge, one light source top-left ---------- */
+.panel,
+.business-panel,
+.treasury-position,
+.payment-summary .summary-item,
+.login-card,
+.modal,
+.drawer {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--ink-850), var(--ink-850)) padding-box,
+    var(--edge) border-box;
+  box-shadow: var(--sh-card);
+}
+.modal,
+.drawer {
+  box-shadow: var(--sh-lift);
+}
+/* the drawer's entrance is a Motion spring (components/ui.tsx) */
+.drawer {
+  animation: none;
+}
+
+/* ---------- buttons ---------- */
+.button,
+.business-app .button {
+  border-radius: var(--r-pill);
+  transition:
+    transform var(--d-fast) var(--ease-out),
+    filter var(--d-fast);
+}
+.button.primary,
+#workspace .button.primary,
+.modal .button.primary,
+.drawer .button.primary,
+.login-page .button.primary,
+.business-app .button.primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--acc-strong), var(--acc));
+  color: var(--acc-ink);
+  font-weight: 650;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 8px 24px -10px var(--acc-glow);
+}
+.button.primary:hover:not(:disabled),
+#workspace .button.primary:hover:not(:disabled),
+.modal .button.primary:hover:not(:disabled),
+.drawer .button.primary:hover:not(:disabled),
+.business-app .button.primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--acc-strong), var(--acc));
+  filter: brightness(1.08);
+}
+.button.danger {
+  color: var(--danger);
+  border-color: rgba(255, 154, 154, 0.4);
+}
+button:active:not(:disabled),
+.button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+button[aria-busy="true"],
+.button[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* ---------- forms ---------- */
+#workspace input,
+#workspace select,
+#workspace textarea,
+.modal input,
+.modal select,
+.business-app input,
+.business-app select,
+.business-app textarea {
+  background: var(--ink-900);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+#workspace input::placeholder,
+.modal input::placeholder,
+.business-app input::placeholder,
+.business-app textarea::placeholder {
+  color: var(--gray-500);
+}
+.field-error {
+  color: var(--danger);
+}
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: var(--danger) !important;
+}
+
+/* ---------- focus: same ring as the landing ---------- */
+#workspace :focus-visible,
+.modal :focus-visible,
+.drawer :focus-visible,
+.business-app :focus-visible,
+.toast :focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
+/* ---------- tables ---------- */
+.payment-table tbody tr,
+.business-table tbody tr {
+  transition: background var(--d-fast);
+}
+.payment-table tbody tr:hover,
+.business-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ---------- skeleton shimmer (transform only) ---------- */
+.skeleton-heading,
+.skeleton-card,
+.skeleton-chart,
+.skeleton-row {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink-800);
+  animation: none;
+}
+.skeleton-heading::after,
+.skeleton-card::after,
+.skeleton-chart::after,
+.skeleton-row::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 80%
+  );
+  transform: translateX(-100%);
+  animation: tf-shimmer 1.4s var(--ease-in-out) infinite;
+}
+@keyframes tf-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* ---------- entrance from the landing page ---------- */
+.app-shell,
+.business-app,
+.login-page {
+  animation: tf-enter var(--d-base) var(--ease-out) both;
+}
+@keyframes tf-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- settlement chart: accent bars, brighter on focus/hover ---------- */
+.bars .bar-column:nth-child(n) .bar-fill {
+  background: linear-gradient(180deg, var(--acc-strong), var(--acc));
+  opacity: 0.78;
+}
+.bars .bar-column.highlight:nth-child(n) .bar-fill,
+.bars .bar-column:nth-child(n):hover .bar-fill,
+.bars .bar-column:nth-child(n):focus-visible .bar-fill {
+  background: linear-gradient(180deg, var(--acc-strong), var(--acc));
+  opacity: 1;
+}
+
+/* ---------- status pulse when a payment is restored to SETTLED ---------- */
+.status-pulse {
+  position: relative;
+  display: inline-flex;
+}
+.status-pulse-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--r-pill);
+  box-shadow: 0 0 0 2px var(--good);
+  pointer-events: none;
+}
+
+/* ---------- tracking steps ---------- */
+.tracking-progress > span.complete {
+  border-color: var(--acc);
+  color: var(--text);
+}
+.tracking-progress > span.recovered {
+  border-color: var(--good);
+}
+.tracking-progress .status-pulse-ring {
+  inset: auto;
+  top: -8px;
+  left: -4px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+}
+
+/* ---------- toasts ---------- */
+.toast {
+  border: 1px solid var(--line-strong);
+  background: var(--ink-800);
+  color: var(--text);
+  box-shadow: var(--sh-lift);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell,
+  .business-app,
+  .login-page,
+  .skeleton-heading::after,
+  .skeleton-card::after,
+  .skeleton-chart::after,
+  .skeleton-row::after {
+    animation: none;
+  }
+  button:active:not(:disabled),
+  .button:active:not(:disabled) {
+    transform: none;
+  }
+}
